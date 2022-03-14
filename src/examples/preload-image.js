@@ -1,6 +1,8 @@
 // Preload image demo 🖼
 // http://localhost:3000/isolated/examples/preload-image.js
 
+//built in preload feature for assets 
+
 import * as React from 'react'
 import {getImageUrlForPokemon} from '../pokemon'
 

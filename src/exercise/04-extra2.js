@@ -1,7 +1,8 @@
 // Cache resources
 // http://localhost:3000/isolated/exercise/04.js
 
-//extra1- put pokemonResourceCache in a context;
+//extra2- the cache is a module level cache but here we're adding the provider and 
+//state so that we can controll it better;
 
 import * as React from 'react'
 import {
@@ -31,32 +32,49 @@ const SUSPENSE_CONFIG = {
   busyMinDurationMs: 700,
 }
 
-// 4-1-c- 🐨 create a pokemonResourceCache object
-const pokemonResourceCache = {}
 
-//4-2-a - creating context with getPokemonResource
-const PokemonResourceCacheContext = React.createContext(getPokemonResource);
+// const PokemonResourceCacheContext = React.createContext(getPokemonResource);
 
+//4-2-c- removing the default val from context since the value is provided in Provider 
+const PokemonResourceCacheContext = React.createContext();
+// const pokemonResourceCache = {}
 
 function createPokemonResource(pokemonName) {
   return createResource(fetchPokemon(pokemonName))
 }
-//4-1-b- // 🐨 create a getPokemonResource function which accepts a name checks the cache
-// for an existing resource. If there is none, then it creates a resource
-// and inserts it into the cache. Finally the function should return the
-// resource.
 
-function getPokemonResource(name){
-  const lowerName = name.toLowerCase();
-  let  resource = pokemonResourceCache[lowerName];
-  if(!resource){
-    resource = createPokemonResource(lowerName);
-    pokemonResourceCache[lowerName] = resource;
-  }
-  return resource;
+// function getPokemonResource(name){
+//   const lowerName = name.toLowerCase();
+//   let  resource = pokemonResourceCache[lowerName];
+//   if(!resource){
+//     resource = createPokemonResource(lowerName);
+//     pokemonResourceCache[lowerName] = resource;
+//   }
+//   return resource;
+// }
+
+//4-2-a- adding cacheProvider function
+//4-2-d - moving the pokemonResourceCache var and its func inside provider func
+function PokemonCacheProvider({children}){
+    //to make cache consistent through re-renders
+    // const pokemonResourceCache = {}
+    const cache = React.useRef({});
+
+    //making the getPokemonResource consistent func since it is mentioned in list of dependencies
+    const getPokemonResource = React.useCallback((name)=> {
+        const lowerName = name.toLowerCase();
+        let  resource = cache.current[lowerName];
+        if(!resource){
+          resource = createPokemonResource(lowerName);
+          cache.current[lowerName] = resource;
+        }
+        return resource;
+      },[]);
+      
+    return <PokemonResourceCacheContext.Provider value={getPokemonResource}>
+        {children}
+    </PokemonResourceCacheContext.Provider>
 }
-
-//4-2-b - adding hook for return context value to the caller comp
 function usePokemonResourceCache(){
   return React.useContext(PokemonResourceCacheContext);
 }
@@ -65,7 +83,6 @@ function App() {
   const [pokemonName, setPokemonName] = React.useState('')
   const [startTransition, isPending] = React.useTransition(SUSPENSE_CONFIG)
   const [pokemonResource, setPokemonResource] = React.useState(null)
-  //4-2-c- using the context and taking the value for it
   const  getPokemonResource = usePokemonResourceCache();
   React.useEffect(() => {
     if (!pokemonName) {
@@ -73,11 +90,8 @@ function App() {
       return
     }
     startTransition(() => {
-      // 4-1-a- 🐨 change this to getPokemonResource instead
-      // setPokemonResource(createPokemonResource(pokemonName))
       setPokemonResource(getPokemonResource(pokemonName))
     })
-    //4-2-d - adding getPokemonResource t othe dependency list
   }, [pokemonName, startTransition,getPokemonResource])
 
   function handleSubmit(newPokemonName) {
@@ -111,5 +125,14 @@ function App() {
     </div>
   )
 }
-
-export default App
+//4-2-b  - wrapping the provider in Appp and adding this as new function
+function AppWithProvider(){
+    return (
+        <PokemonCacheProvider>
+            <App/>
+        </PokemonCacheProvider>
+    )
+}
+//4-2-c- exporting the AppWithProvider component
+// export default App;
+export default AppWithProvider;

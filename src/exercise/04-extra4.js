@@ -1,7 +1,9 @@
 // Cache resources
 // http://localhost:3000/isolated/exercise/04.js
 
-//extra1- put pokemonResourceCache in a context;
+/*Adding the preload feature to the loading imgs and other imgs so they can preload and present*/  
+//1st method - create img element with document.createElement('img').src = add url to preload this
+//2nd method - add the link of img in the html head to preload it 
 
 import * as React from 'react'
 import {
@@ -31,32 +33,41 @@ const SUSPENSE_CONFIG = {
   busyMinDurationMs: 700,
 }
 
-// 4-1-c- 🐨 create a pokemonResourceCache object
-const pokemonResourceCache = {}
-
-//4-2-a - creating context with getPokemonResource
-const PokemonResourceCacheContext = React.createContext(getPokemonResource);
-
+const PokemonResourceCacheContext = React.createContext();
 
 function createPokemonResource(pokemonName) {
   return createResource(fetchPokemon(pokemonName))
 }
-//4-1-b- // 🐨 create a getPokemonResource function which accepts a name checks the cache
-// for an existing resource. If there is none, then it creates a resource
-// and inserts it into the cache. Finally the function should return the
-// resource.
 
-function getPokemonResource(name){
-  const lowerName = name.toLowerCase();
-  let  resource = pokemonResourceCache[lowerName];
-  if(!resource){
-    resource = createPokemonResource(lowerName);
-    pokemonResourceCache[lowerName] = resource;
-  }
-  return resource;
+function PokemonCacheProvider({children,cacheTime}){
+    
+    const cache = React.useRef({});
+    const expirations = React.useRef({});
+
+    React.useEffect(()=>{
+        const interval = setInterval(()=>{
+            for(const [name,time] of Object.entries(expirations.current)){
+                if(time<Date.now()) delete cache.current[name];
+            }
+        },1000);
+
+        return () => clearInterval(interval);
+    },[]);
+
+    const getPokemonResource = React.useCallback((name)=> {
+        const lowerName = name.toLowerCase();
+        let  resource = cache.current[lowerName];
+        if(!resource){
+          resource = createPokemonResource(lowerName);
+          cache.current[lowerName] = resource;
+        }
+        return resource;
+      },[cacheTime]);
+      
+    return <PokemonResourceCacheContext.Provider value={getPokemonResource}>
+        {children}
+    </PokemonResourceCacheContext.Provider>
 }
-
-//4-2-b - adding hook for return context value to the caller comp
 function usePokemonResourceCache(){
   return React.useContext(PokemonResourceCacheContext);
 }
@@ -65,7 +76,6 @@ function App() {
   const [pokemonName, setPokemonName] = React.useState('')
   const [startTransition, isPending] = React.useTransition(SUSPENSE_CONFIG)
   const [pokemonResource, setPokemonResource] = React.useState(null)
-  //4-2-c- using the context and taking the value for it
   const  getPokemonResource = usePokemonResourceCache();
   React.useEffect(() => {
     if (!pokemonName) {
@@ -73,11 +83,8 @@ function App() {
       return
     }
     startTransition(() => {
-      // 4-1-a- 🐨 change this to getPokemonResource instead
-      // setPokemonResource(createPokemonResource(pokemonName))
       setPokemonResource(getPokemonResource(pokemonName))
     })
-    //4-2-d - adding getPokemonResource t othe dependency list
   }, [pokemonName, startTransition,getPokemonResource])
 
   function handleSubmit(newPokemonName) {
@@ -112,4 +119,12 @@ function App() {
   )
 }
 
-export default App
+function AppWithProvider(){
+    return (
+        <PokemonCacheProvider cacheTime={5000}>
+            <App/>
+        </PokemonCacheProvider>
+    )
+}
+
+export default AppWithProvider;

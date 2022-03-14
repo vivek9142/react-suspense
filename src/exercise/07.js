@@ -1,4 +1,4 @@
-// Coordinate Suspending components with SuspenseList
+// Coordinate Suspending components with SuspenseList with their sequecnce as you planned
 // http://localhost:3000/isolated/exercise/07.js
 
 import * as React from 'react'
@@ -61,7 +61,7 @@ function App() {
     setPokemonResource(null)
   }
 
-  // 🐨 Use React.SuspenseList throughout these Suspending components to make
+  // 7-1-a- 🐨 Use React.SuspenseList throughout these Suspending components to make
   // them load in a way that is not jarring to the user.
   // 💰 there's not really a specifically "right" answer for this.
   return (
@@ -71,20 +71,36 @@ function App() {
           onReset={handleReset}
           resetKeys={[pokemonResource]}
         >
-          <React.Suspense fallback={fallback}>
-            <NavBar pokemonResource={pokemonResource} />
-          </React.Suspense>
-          <div className={cn.mainContentArea}>
-            <React.Suspense fallback={fallback}>
-              <LeftNav />
-            </React.Suspense>
-            <React.Suspense fallback={fallback}>
-              <MainContent pokemonResource={pokemonResource} />
-            </React.Suspense>
-            <React.Suspense fallback={fallback}>
-              <RightNav pokemonResource={pokemonResource} />
-            </React.Suspense>
-          </div>
+          {/* revealOrder determines the order - 
+          forwards and backwards works on direct children of suspence
+          'together'  - all components will wait for the last comp to load and then render them all at once
+          'forwards' - all will load one by one depending on their loading spoeed and time
+          'backwards'  - will reveal the last comp first . ex - will be chat app where the last chat is displayed first
+          
+          tail  - decides what the loading should do
+          hidden - will remove the loader and comp will load without it
+          collapsed - will do the loading comp for the boundary components
+          */}
+          <React.SuspenseList revealOrder='forwards' tail='collapsed'>
+              <React.Suspense fallback={fallback}>
+                <NavBar pokemonResource={pokemonResource} />
+              </React.Suspense>
+              <div className={cn.mainContentArea}>
+              <React.SuspenseList revealOrder='forwards'>
+                  <React.Suspense fallback={fallback}>
+                    <LeftNav />
+                  </React.Suspense>
+                  <React.SuspenseList revealOrder='forwards'>
+                      <React.Suspense fallback={fallback}>
+                        <MainContent pokemonResource={pokemonResource} />
+                      </React.Suspense>
+                      <React.Suspense fallback={fallback}>
+                        <RightNav pokemonResource={pokemonResource} />
+                      </React.Suspense>
+                  </React.SuspenseList>`
+              </React.SuspenseList>
+              </div>
+          </React.SuspenseList>
         </PokemonErrorBoundary>
       </div>
     </div>

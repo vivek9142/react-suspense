@@ -1,7 +1,11 @@
 // useTransition for improved loading states
 // http://localhost:3000/isolated/exercise/03.js
 
+// we want to configure how long isPending should be true before react goes and 
+  // reverts to fallback component
+
 import * as React from 'react'
+import { Component } from 'react'
 import {
   fetchPokemon,
   PokemonInfoFallback,
@@ -23,9 +27,11 @@ function PokemonInfo({pokemonResource}) {
   )
 }
 
-// 🐨 create a SUSPENSE_CONFIG variable right here and configure timeoutMs to
+// 3-1-b- 🐨 create a SUSPENSE_CONFIG variable right here and configure timeoutMs to
 // whatever feels right to you, then try it out and tweak it until you're happy
 // with the experience.
+
+const SUSPENSE_CONFIG = {timeoutMs:4000};
 
 function createPokemonResource(pokemonName) {
   // 🦉 once you've finished the exercise, play around with the delay...
@@ -47,7 +53,17 @@ function createPokemonResource(pokemonName) {
 
 function App() {
   const [pokemonName, setPokemonName] = React.useState('')
-  // 🐨 add a useTransition hook here
+  // 3-1-a- 🐨 add a useTransition hook here
+  //3-1-b - passign the SUSPENSE_CONFIG in useTranstion
+  const [startTransition,isPending] = React.useTransition(SUSPENSE_CONFIG);
+
+  //it will give two items func startTransition, boolean ispending
+  // isPending - is set to be true while we r waiting for this async thing to finish
+  //startTranistion = is responsible to what transition is it takes to trigger isPending to be true
+  // if that results in suspending Component.
+  // we want to configure how long isPending should be true before react goes and 
+  // reverts to fallback component
+
   const [pokemonResource, setPokemonResource] = React.useState(null)
 
   React.useEffect(() => {
@@ -55,10 +71,12 @@ function App() {
       setPokemonResource(null)
       return
     }
-    // 🐨 wrap this next line in a startTransition call
-    setPokemonResource(createPokemonResource(pokemonName))
+    // 3-1-d- 🐨 wrap this next line in a startTransition call and add dependency
+    startTransition(()=> {
+      setPokemonResource(createPokemonResource(pokemonName));
+    });
     // 🐨 add startTransition to the deps list here
-  }, [pokemonName])
+  }, [pokemonName,startTransition])
 
   function handleSubmit(newPokemonName) {
     setPokemonName(newPokemonName)
@@ -73,10 +91,10 @@ function App() {
       <PokemonForm pokemonName={pokemonName} onSubmit={handleSubmit} />
       <hr />
       {/*
-        🐨 add inline styles here to set the opacity to 0.6 if the
+        3-1-e - 🐨 add inline styles here to set the opacity to 0.6 if the
         useTransition above is pending
       */}
-      <div className="pokemon-info">
+      <div className="pokemon-info" style={{opacity:isPending ? 0.6 : 1}}>
         {pokemonResource ? (
           <PokemonErrorBoundary
             onReset={handleReset}

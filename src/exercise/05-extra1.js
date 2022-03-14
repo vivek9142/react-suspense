@@ -1,25 +1,67 @@
-// Suspense with a custom hook
-// http://localhost:3000/isolated/exercise/06.js
+// Suspense Image
+// http://localhost:3000/isolated/exercise/05.js
 
+/*
+problem we're getting is we're blocking the data when we're waiting forthe imgs to load.
+so when debugging we found on url response we're getting the img name is also the pokemon name
+we can update the img fetching and also the data will not have to wait 
 
-//create a custome hook for this fetching feature.
+we can check the real backend request and response with -  window.useRealAPI = true;
+and we can see the req and response in the network tab.
+
+the soln is we can update the createPokemonResource func here for this extra credit
+*/
 
 import * as React from 'react'
 import {
   fetchPokemon,
-  getImageUrlForPokemon,
   PokemonInfoFallback,
+  //5-2-b- import function for fetchign the pokemon img name
+  getImageUrlForPokemon,
   PokemonForm,
   PokemonDataView,
   PokemonErrorBoundary,
 } from '../pokemon'
-import {createResource, preloadImage} from '../utils'
+import {createResource} from '../utils'
+
+// ❗❗❗❗
+// 🦉 On this one, make sure that you UNCHECK the "Disable cache" checkbox
+// in your DevTools "Network Tab". We're relying on that cache for this
+// approach to work!
+// ❗❗❗❗
+
+//5-2-e- don't need this function and cacheResouce for img
+
+// function Img({src,alt,...props}){
+//   let imgSrcResource = imgSrcResourceCache[src];
+//   if(!imgSrcResource){ 
+//     imgSrcResource = createResource(preloadImage(src));
+//     imgSrcResourceCache[src] = imgSrcResource
+//   }
+
+//   return <img src={imgSrcResource.read()} alt={alt} {...props} />
+// }
+
+// const imgSrcResourceCache = {} 
+
+function preloadImage(src){
+  return new Promise(resolve =>{
+    const img = document.createElement('img')
+    img.src = src;
+    img.onload = () => resolve(src);
+  })
+}
+
 
 function PokemonInfo({pokemonResource}) {
-  const pokemon = pokemonResource.data.read()
+    //5-2-c- update it as it is now an obj returned by function
+//   const pokemon = pokemonResource.read()
+    const pokemon = pokemonResource.data.read()
   return (
     <div>
       <div className="pokemon-info__img-wrapper">
+          {/* //5-2-d- update this also */}
+        {/* <Img src={pokemon.image} alt={pokemon.name} /> */}
         <img src={pokemonResource.image.read()} alt={pokemon.name} />
       </div>
       <PokemonDataView pokemon={pokemon} />
@@ -44,16 +86,16 @@ function getPokemonResource(name) {
   }
   return resource
 }
-
+// 5-2-a- update this method 
 function createPokemonResource(pokemonName) {
-  const data = createResource(fetchPokemon(pokemonName))
-  const image = createResource(preloadImage(getImageUrlForPokemon(pokemonName)))
-  return {data, image}
+//   return createResource(fetchPokemon(pokemonName))
+    const data = createResource(fetchPokemon(pokemonName))
+    const image = createResource(preloadImage(getImageUrlForPokemon(pokemonName)))
+    return {data,image};
 }
 
-//6-1-c- simply in creating custom hook , simply copy the lines from your comp to function
-//then includethe var name labelledas red in the function param and return the values in yelow  as array or obj
-function usePokemonResource(pokemonName){
+function App() {
+  const [pokemonName, setPokemonName] = React.useState('')
   const [startTransition, isPending] = React.useTransition(SUSPENSE_CONFIG)
   const [pokemonResource, setPokemonResource] = React.useState(null)
 
@@ -66,31 +108,6 @@ function usePokemonResource(pokemonName){
       setPokemonResource(getPokemonResource(pokemonName))
     })
   }, [pokemonName, startTransition])
-
-  return [pokemonResource,isPending]
-
-}
-function App() {
-  const [pokemonName, setPokemonName] = React.useState('')
-  // 6-1-a- 🐨 move these two lines to a custom hook called usePokemonResource
-  // const [startTransition, isPending] = React.useTransition(SUSPENSE_CONFIG)
-  // const [pokemonResource, setPokemonResource] = React.useState(null)
-  // 🐨 call usePokemonResource with the pokemonName.
-  //    It should return both the pokemonResource and isPending
-
-  // 6-1-b- 🐨 move this useEffect call to your custom usePokemonResource hook
-  // React.useEffect(() => {
-  //   if (!pokemonName) {
-  //     setPokemonResource(null)
-  //     return
-  //   }
-  //   startTransition(() => {
-  //     setPokemonResource(getPokemonResource(pokemonName))
-  //   })
-  // }, [pokemonName, startTransition])
-
-  //6-1-d - use the custom hook made above
-  const [pokemonResource,isPending] = usePokemonResource(pokemonName);
 
   function handleSubmit(newPokemonName) {
     setPokemonName(newPokemonName)

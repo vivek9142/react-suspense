@@ -12,6 +12,11 @@ const rootEl = document.getElementById('root')
 // the old way:
 // ReactDOM.render(<App />, rootEl)
 
+
+//to enable concurrent mode and new way
 // the new way:
 const root = ReactDOM.createRoot(rootEl)
 root.render(<App />)
+
+//if we want to unmount the root component from dom
+// root.unmount();
